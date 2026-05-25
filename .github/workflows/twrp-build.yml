@@ -16,7 +16,7 @@ jobs:
       - name: Checkout Device Tree
         uses: actions/checkout@v4
         with:
-          path: device/samsung/m13 # Checks out your tree straight into the build workspace directory
+          path: device/samsung/m13 # Checks out your tree straight into this path
 
       - name: Free Disk Space
         run: |
@@ -50,8 +50,9 @@ jobs:
 
       - name: Inject Device Tree
         run: |
-          # Places your uploaded repository tree into the correct compile directory tree
-          mv device/samsung/m13 twrp/device/samsung/m13
+          # Safe relocation: Moves the checked-out tree into the newly populated twrp directory structure
+          mkdir -p twrp/device/samsung/m13
+          mv device/samsung/m13/* twrp/device/samsung/m13/
 
       - name: Compile Recovery
         run: |
