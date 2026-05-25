@@ -50,6 +50,13 @@ jobs:
 
       - name: Inject Device Tree
         run: |
+          # Install dos2unix utility to fix Windows carriage return bugs
+          sudo apt-get update && sudo apt-get install -y dos2unix
+          
+          # Fix line endings in your device tree script files
+          find device/samsung/m13/ -type f -name "*.sh" -exec dos2unix {} +
+          find device/samsung/m13/ -type f -name "*.mk" -exec dos2unix {} +
+          
           # Safe relocation: Moves the checked-out tree into the newly populated twrp directory structure
           mkdir -p twrp/device/samsung/m13
           mv device/samsung/m13/* twrp/device/samsung/m13/
