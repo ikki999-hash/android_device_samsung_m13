@@ -1,0 +1,68 @@
+name: Compile TWRP Recovery
+
+on:
+  workflow_dispatch: # Allows manual trigger from the Actions tab
+
+jobs:
+  build:
+    runs-on: ubuntu-22.04
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout Device Tree
+        uses: actions/checkout@v4
+        with:
+          path: device/samsung/m13 # Checks out your tree straight into the build workspace directory
+
+      - name: Free Disk Space
+        run: |
+          sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc
+          sudo apt-get clean
+
+      - name: Install Build Dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y bc bison build-essential ccache curl flex g++-multilib gcc-multilib git gnupg gperf lib32ncurses5-dev lib32readline-dev lib32z1-dev liblz4-tool libncurses5 libncurses5-dev libsdl1.2-dev libssl-dev libxml2 libxml2-utils lzop pngcrush rsync schedtool squashfs-tools xsltproc zip zlib1g-dev python3
+
+      - name: Install Repo Tool
+        run: |
+          mkdir -p ~/bin
+          curl https://storage.googleapis.com/git-repo-downloads/repo > ~/bin/repo
+          chmod a+x ~/bin/repo
+          echo "$HOME/bin" >> $GITHUB_PATH
+
+      - name: Initialize TWRP Manifest
+        run: |
+          git config --global user.name "ikki999-hash"
+          git config --global user.email "compiler@twrp.local"
+          mkdir twrp && cd twrp
+          # Initializing AOSP-12.1 minimal manifest for modern building
+          repo init -u https://github.com/minimal-manifest-twrp/platform_manifest_twrp_aosp.git -b twrp-12.1 --depth=1
+
+      - name: Sync Source Code
+        run: |
+          cd twrp
+          repo sync -c -j$(nproc --all) --force-sync --no-clone-bundle --no-tags
+
+      - name: Inject Device Tree
+        run: |
+          # Places your uploaded repository tree into the correct compile directory tree
+          mv device/samsung/m13 twrp/device/samsung/m13
+
+      - name: Compile Recovery
+        run: |
+          cd twrp
+          export ALLOW_MISSING_DEPENDENCIES=true
+          source build/envsetup.sh
+          # Targets the lunch profile configured in your device tree
+          lunch twrp_m13-eng || lunch omni_m13-eng
+          make recoveryimage -j$(nproc --all)
+
+      - name: Upload Flashable Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: TWRP-Built-Galaxy-M13
+          path: |
+            twrp/out/target/product/m13/recovery.img
+            twrp/out/target/product/m13/recovery.tar
