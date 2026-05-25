@@ -1,4 +1,4 @@
-# Android device tree for samsung SM-A135F (a13)
+# Android device tree for samsung SM-M135F (m13)
 
 # Contributors
  - (Physwizz)[https://github.com/Physwizz]. 
